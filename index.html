@@ -34,10 +34,49 @@
 
     <div class="controls">
         <button class="save-btn" onclick="saveData()">データを保存する</button>
-        
+        <button onclick="shareAsJson()" style="padding: 10px 20px; cursor: pointer;">
+  チェック内容をJSONで共有する
+        </button>
     </div>
 
     <script>
+        async function shareAsJson() {
+  // ① チェックされた項目だけを集めてオブジェクトにする
+  const selectedItems = Array.from(document.querySelectorAll('#check-group input[type="checkbox"]:checked'))
+    .map(cb => ({
+      id: cb.value,
+      label: cb.getAttribute('data-label') || cb.parentElement.textContent.trim(),
+      checked: true,
+      timestamp: new Date().toISOString() // 送信時間などの付加情報
+    }));
+
+  // チェックが一つもない場合の処理
+  if (selectedItems.length === 0) {
+    alert("項目を一つ以上チェックしてください。");
+    return;
+  }
+
+  // ② データをJSON形式の文字列に変換
+  const jsonString = JSON.stringify(selectedItems, null, 2);
+
+  // ③ OS標準の共有メニューを呼び出す（Web Share API）
+  if (navigator.share) {
+    try {
+      await navigator.share({
+        title: 'チェックリスト共有',
+        text: jsonString, // ここにJSONの中身がテキストとして入ります
+      });
+      console.log('共有に成功しました');
+    } catch (error) {
+      if (error.name !== 'AbortError') {
+        alert('共有に失敗しました: ' + error.message);
+      }
+    }
+  } else {
+    // 共有機能（Web Share API）に未対応のブラウザの場合
+    alert("お使いのブラウザは直接共有に対応していません。\n以下のJSONをコピーして利用してください：\n\n" + jsonString);
+  }
+        }
         // ページを読み込んだ時に保存データを表示
         window.onload = function() {
             loadData();
